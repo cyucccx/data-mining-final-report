@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 
@@ -16,9 +16,9 @@ test = pd.read_csv("mental-health-data/test.csv")
 # ============================================================
 # 2. Split X / y
 # ============================================================
-X = train.drop(columns=["Depression", "id"])
+X = train.drop(columns=["Depression", "id", "Name"])
 y = train["Depression"]
-test_X = test.drop(columns=["id"])
+test_X = test.drop(columns=["id", "Name"])
 test_id = test["id"]
 
 # ============================================================
@@ -27,9 +27,16 @@ test_id = test["id"]
 numeric_cols = X.select_dtypes(include=["int64", "float64"]).columns
 categorical_cols_all = X.select_dtypes(include=["object"]).columns
 
-# Fill numeric NA with median
-X[numeric_cols] = X[numeric_cols].fillna(X[numeric_cols].median())
-test_X[numeric_cols] = test_X[numeric_cols].fillna(X[numeric_cols].median())
+# Fill Job/Study related columns with 0
+job_study_cols = ["CGPA", "Academic Pressure", "Work Pressure", "Study Satisfaction", "Job Satisfaction"]
+for col in job_study_cols:
+    if col in X.columns:
+        X[col] = X[col].fillna(0)
+        test_X[col] = test_X[col].fillna(0)
+
+# Fill numeric NA with 0
+X[numeric_cols] = X[numeric_cols].fillna(0)
+test_X[numeric_cols] = test_X[numeric_cols].fillna(0)
 
 # Fill categorical NA with "Unknown"
 X[categorical_cols_all] = X[categorical_cols_all].fillna("Unknown")
@@ -182,9 +189,9 @@ test_X = test_X.drop(columns=["Working Professional or Student"])
 print("Binary fields encoded (0/1).")
 
 # ============================================================
-# 6. One-Hot (none currently, list kept for extensibility)
+# 6. One-Hot (City, Profession)
 # ============================================================
-categorical_cols = []
+categorical_cols = ["City", "Profession"]
 
 # ============================================================
 # 7. Numeric fields splitting (to avoid scaling binary columns)
@@ -208,12 +215,17 @@ print("Binary columns NOT scaled:", binary_cols_fixed)
 # ============================================================
 # 8. Outlier removal (only scale-supported columns)
 # ============================================================
-Q1 = X[numeric_to_scale].quantile(0.25)
-Q3 = X[numeric_to_scale].quantile(0.75)
+# Only remove outliers from continuous columns that are not heavily skewed by 0-filling
+cols_for_outliers = ["Age", "Work/Study Hours", "Sleep_Hours"]
+# Ensure they exist in X
+cols_for_outliers = [c for c in cols_for_outliers if c in X.columns]
+
+Q1 = X[cols_for_outliers].quantile(0.25)
+Q3 = X[cols_for_outliers].quantile(0.75)
 IQR = Q3 - Q1
 
-mask = ~((X[numeric_to_scale] < (Q1 - 1.5 * IQR)) |
-         (X[numeric_to_scale] > (Q3 + 1.5 * IQR))).any(axis=1)
+mask = ~((X[cols_for_outliers] < (Q1 - 1.5 * IQR)) |
+         (X[cols_for_outliers] > (Q3 + 1.5 * IQR))).any(axis=1)
 
 X = X[mask]
 y = y[mask]
@@ -232,7 +244,7 @@ X_train, X_valid, y_train, y_valid = train_test_split(
 # ============================================================
 preprocessor = ColumnTransformer(
     transformers=[
-        ("num", StandardScaler(), numeric_to_scale),
+        ("num", MinMaxScaler(), numeric_to_scale),
         ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), categorical_cols),
         ("binary", "passthrough", binary_cols_fixed)
     ],
@@ -259,4 +271,4 @@ y_train.to_csv("y_train.csv", index=False)
 y_valid.to_csv("y_valid.csv", index=False)
 test_id.to_csv("test_id.csv", index=False)
 
-print("\n===== PREPROCESSING DONE (Binary Not Scaled) =====")
+print("\n===== PREPROCESSING DONE =====")
