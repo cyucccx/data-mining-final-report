@@ -4,12 +4,12 @@ from sklearn.metrics import accuracy_score, classification_report
 
 # 1. 載入經過 data-preprocessing.py 處理過的資料
 # 確保這些檔案在你的目錄中
-X_train = pd.read_csv('X_train_processed.csv')
-X_valid = pd.read_csv('X_valid_processed.csv')
-X_test  = pd.read_csv('X_test_processed.csv')
-y_train = pd.read_csv('y_train.csv')
-y_valid = pd.read_csv('y_valid.csv')
-test_id = pd.read_csv('test_id.csv') # 這是為了最後上傳用的 ID
+X_train = pd.read_csv('processed-data/X_train_processed.csv')
+X_valid = pd.read_csv('processed-data/X_valid_processed.csv')
+X_test  = pd.read_csv('processed-data/X_test_processed.csv')
+y_train = pd.read_csv('processed-data/y_train.csv')
+y_valid = pd.read_csv('processed-data/y_valid.csv')
+test_id = pd.read_csv('processed-data/test_id.csv') # 這是為了最後上傳用的 ID
 
 # 2. 建立模型 (這裡是可以調整參數的地方 - 報告重點!)
 # 改變參數範例: n_estimators (樹的數量), learning_rate (學習率), max_depth (深度)
