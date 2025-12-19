@@ -1,5 +1,5 @@
 import pandas as pd
-import lightgbm as lgb
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, classification_report
 import os
 
@@ -22,20 +22,17 @@ def load_data():
     test_id = pd.read_csv(TEST_ID_PATH)
     return X_train, y_train, X_valid, y_valid, X_test, test_id
 
-def train_model(X_train, y_train, X_valid, y_valid):
-    print("Training LightGBM model...")
-    clf = lgb.LGBMClassifier(random_state=42)
-    clf.fit(
-        X_train, y_train,
-        eval_set=[(X_valid, y_valid)],
-        eval_metric='logloss',
-        callbacks=[lgb.early_stopping(stopping_rounds=10), lgb.log_evaluation(period=10)]
-    )
+def train_model(X_train, y_train):
+    print("Training Decision Tree model...")
+    # Limiting depth to prevent severe overfitting, similar to the hybrid approach
+    clf = DecisionTreeClassifier(random_state=42, max_depth=10) 
+    clf.fit(X_train, y_train)
     return clf
 
 def evaluate_model(clf, X_valid, y_valid):
     print("Evaluating model...")
     y_pred = clf.predict(X_valid)
+    
     accuracy = accuracy_score(y_valid, y_pred)
     print(f"Validation Accuracy: {accuracy:.4f}")
     print("\nClassification Report:")
@@ -44,7 +41,7 @@ def evaluate_model(clf, X_valid, y_valid):
 def main():
     X_train, y_train, X_valid, y_valid, X_test, test_id = load_data()
     
-    clf = train_model(X_train, y_train, X_valid, y_valid)
+    clf = train_model(X_train, y_train)
     
     evaluate_model(clf, X_valid, y_valid)
     
