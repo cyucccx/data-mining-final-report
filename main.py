@@ -1,4 +1,3 @@
-from pyexpat import model
 import pandas as pd
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
