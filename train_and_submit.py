@@ -15,8 +15,8 @@ test_id = pd.read_csv('processed-data/test_id.csv') # 這是為了最後上傳�
 # 改變參數範例: n_estimators (樹的數量), learning_rate (學習率), max_depth (深度)
 model = xgb.XGBClassifier(
     n_estimators=1000,
-    learning_rate=0.1,    
-    max_depth=12,         
+    learning_rate=0.05,
+    max_depth=2,          # 從 6 改成 2 (只能做很簡單的判斷)
     early_stopping_rounds=50,
     random_state=42,
     n_jobs=-1
@@ -49,5 +49,5 @@ submission = pd.DataFrame({
 })
 
 # 存檔
-submission.to_csv('change_depth.csv', index=False)
+submission.to_csv('stupid.csv', index=False)
 print("\n上傳檔案已建立: submission.csv")
