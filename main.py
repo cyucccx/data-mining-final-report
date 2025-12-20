@@ -15,14 +15,14 @@ X_test  = pd.read_csv('processed-data/X_test_processed.csv')
 test_id = pd.read_csv('processed-data/test_id.csv')
 
 # train model
-mprint("Training SVC model...")
-svc = SVC(verbose=True)
-svc.fit(X_train, Y_train.values.ravel())
+mprint("Training model...")
+clf = SVC(verbose=True)
+clf.fit(X_train, Y_train.values.ravel())
 print()
 
 # predict on validation set
 mprint("Evaluating on validation set...")
-Y_valid_pred = svc.predict(X_valid)
+Y_valid_pred = clf.predict(X_valid)
 
 mprint("Classification Report on Validation Set:")
 report = classification_report(Y_valid, Y_valid_pred)
@@ -30,7 +30,7 @@ print(report)
 
 # predict on test set
 mprint("Predicting on test set...")
-Y_test_pred = svc.predict(X_test)
+Y_test_pred = clf.predict(X_test)
 submission = pd.DataFrame({
     'id': test_id['id'],
     'Depression': Y_test_pred
