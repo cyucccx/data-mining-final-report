@@ -14,12 +14,12 @@ test_id = pd.read_csv('processed-data/test_id.csv') # 這是為了最後上傳�
 # 2. 建立模型 (這裡是可以調整參數的地方 - 報告重點!)
 # 改變參數範例: n_estimators (樹的數量), learning_rate (學習率), max_depth (深度)
 model = xgb.XGBClassifier(
-    n_estimators=1000,       # 樹的數量
-    learning_rate=0.05,      # 學習率 (越低越慢但通常越準)
-    max_depth=6,             # 樹的深度
-    early_stopping_rounds=50, # 如果50次迭代都沒有進步就停止 (防止過擬合)
+    n_estimators=1000,
+    learning_rate=0.1,    
+    max_depth=12,         
+    early_stopping_rounds=50,
     random_state=42,
-    n_jobs=-1                # 使用所有 CPU 核心
+    n_jobs=-1
 )
 
 # 3. 訓練模型
@@ -49,5 +49,5 @@ submission = pd.DataFrame({
 })
 
 # 存檔
-submission.to_csv('submission.csv', index=False)
+submission.to_csv('change_depth.csv', index=False)
 print("\n上傳檔案已建立: submission.csv")
