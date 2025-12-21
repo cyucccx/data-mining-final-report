@@ -2,6 +2,7 @@ import optuna
 import pandas as pd
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import classification_report, accuracy_score
+from sklearn.model_selection import KFold
 
 def mprint(*args, **kwargs):
     print("[main]", *args, **kwargs)
@@ -41,16 +42,25 @@ def objective(trial, X_train, y_train, X_valid, y_valid):
         'n_iter_no_change': n_iter_no_change,
     }
 
-    clf = SGDClassifier(**params)
-    clf.fit(X_train, y_train.values.ravel())
+    # Cross-validation
+    kf = KFold(n_splits=3, shuffle=True, random_state=42)
+    accuracies = []
+    for train_index, valid_index in kf.split(X_train):
+        X_tr, X_val = X_train.iloc[train_index], X_train.iloc[valid_index]
+        y_tr, y_val = y_train.iloc[train_index], y_train.iloc[valid_index]
 
-    y_valid_pred = clf.predict(X_valid)
-    accuracy = accuracy_score(y_valid, y_valid_pred)
+        clf = SGDClassifier(**params)
+        clf.fit(X_tr, y_tr.values.ravel())
 
-    return accuracy
+        y_val_pred = clf.predict(X_val)
+        accuracy = accuracy_score(y_val, y_val_pred)
+        accuracies.append(accuracy)
+
+    # Return the average accuracy across folds
+    return sum(accuracies) / len(accuracies)
 
 def train(X_train, y_train, X_valid, y_valid):
-    study = optuna.create_study(direction='maximize')
+    study = optuna.create_study(direction='maximize', study_name='SGDClassifier Optimization')
     study.optimize(lambda trial: objective(trial, X_train, y_train, X_valid, y_valid), n_trials=50)
 
     print("Best trial:")
