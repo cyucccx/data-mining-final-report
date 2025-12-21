@@ -1,9 +1,10 @@
+import optuna
 import pandas as pd
 from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 
 def mprint(*args, **kwargs):
-    print("[main] ", *args, **kwargs)
+    print("[main]", *args, **kwargs)
 
 def load():
     mprint("Loading processed data...")
@@ -15,22 +16,55 @@ def load():
     test_id = pd.read_csv('processed-data/test_id.csv')
     return X_train, X_valid, y_train, y_valid, X_test, test_id
 
-def train(X_train, y_train):
+def objective(trial, X_train, y_train, X_valid, y_valid):
+    loss = trial.suggest_categorical('loss', ['hinge', 'log_loss', 'modified_huber', 'squared_hinge', 'perceptron'])
+    alpha = trial.suggest_float('alpha', 1e-6, 1e-1, log=True)
+    penalty = trial.suggest_categorical('penalty', ['l2', 'l1', 'elasticnet'])
+
+    l1_ratio = 0.15
+    if penalty == 'elasticnet':
+        l1_ratio = trial.suggest_float('l1_ratio', 0.0, 1.0)
+
+    learning_rate = trial.suggest_categorical('learning_rate', ['optimal', 'invscaling', 'adaptive'])
+    early_stopping = trial.suggest_categorical('early_stopping', [True, False])
+    n_iter_no_change = 5
+    if early_stopping:
+        n_iter_no_change = trial.suggest_int('n_iter_no_change', 2, 10)
+
     params = {
-        'loss': 'log_loss',
-        'penalty': 'l2',
-        'alpha': 0.0001,
-        'max_iter': 1000,
-        'random_state': 42,
-        'n_jobs': -1,
-        'early_stopping': True,
-        'validation_fraction': 0.1
+        'loss': loss,
+        'alpha': alpha,
+        'penalty': penalty,
+        'l1_ratio': l1_ratio,
+        'learning_rate': learning_rate,
+        'early_stopping': early_stopping,
+        'n_iter_no_change': n_iter_no_change,
     }
 
-    model = SGDClassifier(**params)
-    model.fit(X_train, y_train.values.ravel())
+    clf = SGDClassifier(**params)
+    clf.fit(X_train, y_train.values.ravel())
 
-    return model
+    y_valid_pred = clf.predict(X_valid)
+    accuracy = accuracy_score(y_valid, y_valid_pred)
+
+    return accuracy
+
+def train(X_train, y_train, X_valid, y_valid):
+    study = optuna.create_study(direction='maximize')
+    study.optimize(lambda trial: objective(trial, X_train, y_train, X_valid, y_valid), n_trials=50)
+
+    print("Best trial:")
+    trial = study.best_trial
+    print("Value: ", trial.value)
+    print("Params: ")
+    for key, value in trial.params.items():
+        print(f"  {key}: {value}")
+
+    best_params = trial.params
+    best_model = SGDClassifier(**best_params)
+    best_model.fit(X_train, y_train.values.ravel())
+
+    return best_model
 
 def predict(model, X, y=None):
     y_pred = model.predict(X)
@@ -54,7 +88,7 @@ def main():
     X_train, X_valid, y_train, y_valid, X_test, test_id = load()
 
     mprint("Training model...")
-    clf = train(X_train, y_train)
+    clf = train(X_train, y_train, X_valid, y_valid)
 
     mprint("Evaluating on validation set...")
     predict(clf, X_valid, y_valid)
