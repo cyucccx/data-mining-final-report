@@ -17,7 +17,7 @@ def load():
     test_id = pd.read_csv('processed-data/test_id.csv')
     return X_train, X_valid, y_train, y_valid, X_test, test_id
 
-def objective(trial, X_train, y_train, X_valid, y_valid):
+def objective(trial, X_train, y_train):
     loss = trial.suggest_categorical('loss', ['hinge', 'log_loss', 'modified_huber', 'squared_hinge', 'perceptron'])
     alpha = trial.suggest_float('alpha', 1e-6, 1e-1, log=True)
     penalty = trial.suggest_categorical('penalty', ['l2', 'l1', 'elasticnet'])
@@ -59,9 +59,9 @@ def objective(trial, X_train, y_train, X_valid, y_valid):
     # Return the average accuracy across folds
     return sum(accuracies) / len(accuracies)
 
-def train(X_train, y_train, X_valid, y_valid):
+def train(X_train, y_train, n_trials=50):
     study = optuna.create_study(direction='maximize', study_name='SGDClassifier Optimization')
-    study.optimize(lambda trial: objective(trial, X_train, y_train, X_valid, y_valid), n_trials=50)
+    study.optimize(lambda trial: objective(trial, X_train, y_train), n_trials)
 
     print("Best trial:")
     trial = study.best_trial
@@ -98,7 +98,7 @@ def main():
     X_train, X_valid, y_train, y_valid, X_test, test_id = load()
 
     mprint("Training model...")
-    clf = train(X_train, y_train, X_valid, y_valid)
+    clf = train(X_train, y_train)
 
     mprint("Evaluating on validation set...")
     predict(clf, X_valid, y_valid)
