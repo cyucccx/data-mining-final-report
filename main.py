@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.svm import SVC
+from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import classification_report
 
 def mprint(*args, **kwargs):
@@ -16,7 +16,17 @@ test_id = pd.read_csv('processed-data/test_id.csv')
 
 # train model
 mprint("Training model...")
-clf = SVC(verbose=True)
+params = {
+    'loss': 'log_loss',
+    'penalty': 'l2',
+    'alpha': 0.0001,
+    'max_iter': 1000,
+    'random_state': 42,
+    'n_jobs': -1,
+    'early_stopping': True,
+    'validation_fraction': 0.1
+}
+clf = SGDClassifier(**params)
 clf.fit(X_train, Y_train.values.ravel())
 print()
 
